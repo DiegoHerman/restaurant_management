@@ -1,144 +1,249 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "order.h"//includes order header files
+#include <time.h>
+#include "order.h"
+void FoodOrderMenu();
+void PlaceOrder();
+void PaymentReceipt();
+void getCurrentDate(char *date);
+void displayOrderHistory(int customerIndex);
+void clearInputBuffer();
+int findCustomerbyId(int id);
 
-static OrderNode *front = NULL, *rear = NULL;//this is the implementation of a linked list
-
-
-void displayMenu(MenuItem menu[], int size) //Displays all available menu items with their IDs and prices.
+typedef struct 
 {
-    printf("\nAvailable Items:\n");
-    for (int i = 0; i < size; i++) {
-        printf("%d. %s - $%.2f\n", menu[i].id, menu[i].name, menu[i].price);
+    int foodID;
+    char foodName[120];
+    int price;
+    int quantity;
+
+} FoodOrderItem;
+
+typedef struct {
+    int customerId;
+    char name[50];
+    FoodOrderItem orders[20];
+    int orderCount;
+    float totalAmount;
+} Customer;
+
+Customer customers[100];
+int customerCount = 0;
+int adminLoggedIn = 0;
+int nextCustomerId = 1001; 
+
+ FoodOrderItem menu[12] = {
+    {101, "Swahili Pilau with Chicken Curry", 250},
+    {102, "Chapati with Beef Stew", 150},
+    {103, "Pasta with Beef Stew", 120},
+    {104, "Chapati with Beans", 100},
+    {105, "Ugali with Fish Stew", 150},
+    {106, "Ugali with Beef Stew", 150},
+    {107, "Ugali with Chicken Stew", 200},
+    {108, "Ugali with Vegetable Stew", 100},
+    {109, "Rice with Beans Stew", 100},
+    {110, "Rice with Beef Stew", 150},
+    {111, "Rice with Chicken Stew", 200},
+    {112, "Rice with Vegetable Stew", 100}
+};
+void FoodOrderMenu() {
+    printf("\n=== FOOD MENU ===\n");
+    printf("%-5s %-40s %-10s\n", "ID", "ITEM NAME", "PRICE (KSH)");
+    printf("------------------------------------------------\n");
+    for (int i = 0; i < 12; i++) {
+        printf("%-5d %-40s %-10d\n", menu[i].foodID, menu[i].foodName, menu[i].price);
     }
 }
-
-void push(StackNode **top, OrderItem item) 
-{
-    StackNode *newNode = malloc(sizeof(StackNode));
-    newNode->item = item;
-    newNode->next = *top;
-    *top = newNode;
+void clearInputBuffer() {
+    while (getchar() != '\n');
 }
-
-int pop(StackNode **top, OrderItem *item) 
-{
-    if (!*top) return 0;
-    StackNode *temp = *top;
-    *item = temp->item;
-    *top = temp->next;
-    free(temp);
-    return 1;
+void getCurrentDate(char *date) {
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    sprintf(date, "%04d-%02d-%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
 }
-
-void enqueueOrder(OrderItem items[], int count) {
-    OrderNode *newOrder = malloc(sizeof(OrderNode));
-    memcpy(newOrder->items, items, sizeof(OrderItem) * count);
-    newOrder->itemCount = count;
-    newOrder->next = NULL;
-
-    if (rear == NULL) {
-        front = rear = newOrder;
-    } else {
-        rear->next = newOrder;
-        rear = newOrder;
+int findCustomerbyId(int id) {
+    for (int i = 0; i < customerCount; i++) {
+        if (customers[i].customerId == id) {
+            return i;
+        }
     }
-
-    printf(" Order placed successfully into the queue!\n");
+    return -1;
 }
-
-void displayOrderQueue() {
-    if (!front) {
-        printf(" No orders in queue.\n");
+void saveCustomersToFile() {
+    FILE *file = fopen("customers.dat", "wb");
+    if (file == NULL) {
+        printf("Error saving customer data!\n");
+        return;
+    }
+    fwrite(&customerCount, sizeof(int), 1, file);
+    fwrite(&nextCustomerId, sizeof(int), 1, file);
+    fwrite(customers, sizeof(Customer), customerCount, file);
+    fclose(file);
+}
+void PlaceOrder() {
+    if (customerCount == 0) {
+        printf("\nNo customers available. Please contact admin.\n");
         return;
     }
 
-    printf("\nCurrent Order Queue:\n");
-    OrderNode *curr = front;
-    int orderNum = 1;
-    while (curr) {
-        printf("Order %d:\n", orderNum++);
-        for (int i = 0; i < curr->itemCount; i++) {
-            printf("  Item ID: %d, Quantity: %d\n", curr->items[i].itemID, curr->items[i].quantity);
-        }
-        curr = curr->next;
+    int customerId;
+    printf("\nEnter your Customer ID: ");
+    if (scanf("%d", &customerId) != 1) {
+        printf("Invalid customer ID.\n");
+        clearInputBuffer();
+        return;
     }
-}
+    
+    int customerIndex = findCustomerbyId(customerId);
+    if (customerIndex == -1) {
+        printf("Customer not found!\n");
+        return;
+    }
 
-void startOrder(MenuItem menu[], int menuSize) {
-    OrderItem items[10];
-    int count = 0;
-    int choice, quantity;
-    StackNode *undoStack = NULL;
-
-    printf("\n Start your order (0 to finish, -1 to undo last item):\n");
-
-    while (1) {
-        displayMenu(menu, menuSize);
-        printf("Enter item number: ");
-        if (scanf("%d", &choice) != 1) {
-            while (getchar() != '\n');
-            printf("Invalid input.\n");
+    printf("\nWelcome, %s!\n", customers[customerIndex].name);
+    FoodOrderMenu();
+    
+    int orderMore = 1;
+    while (orderMore) {
+        int foodId, quantity;
+        printf("\nEnter Food ID to order (0 to finish): ");
+        if (scanf("%d", &foodId) != 1) {
+            printf("Invalid input. Please enter a number.\n");
+            clearInputBuffer();
+            continue;
+        }
+        
+        if (foodId == 0) {
+            orderMore = 0;
             continue;
         }
 
-        if (choice == 0) break;
-
-        if (choice == -1) {
-            OrderItem undone;
-            if (pop(&undoStack, &undone)) {
-                count--;
-                printf(" Undid item %d x%d\n", undone.itemID, undone.quantity);
-            } else {
-                printf("Nothing to undo.\n");
+        int foodIndex = -1;
+        for (int i = 0; i < 12; i++) {
+            if (menu[i].foodID == foodId) {
+                foodIndex = i;
+                break;
             }
+        }
+
+        if (foodIndex == -1) {
+            printf("Invalid Food ID! Please try again.\n");
             continue;
         }
 
-        if (choice < 1 || choice > menuSize) {
-            printf("Invalid item.\n");
-            continue;
-        }
-
-        printf("Enter quantity: ");
+        printf("Enter quantity for %s: ", menu[foodIndex].foodName);
         if (scanf("%d", &quantity) != 1 || quantity <= 0) {
-            while (getchar() != '\n');
-            printf("Invalid quantity.\n");
+            printf("Invalid quantity! Must be a positive number.\n");
+            clearInputBuffer();
             continue;
         }
 
-        items[count].itemID = choice;
-        items[count].quantity = quantity;
-        push(&undoStack, items[count]);
-        count++;
-
-        if (count >= 10) {
-            printf("Maximum of 10 items reached.\n");
+        // Add to customer's orders
+        int orderPos = customers[customerIndex].orderCount;
+        if (orderPos >= 20) {
+            printf("Maximum order items reached!\n");
             break;
         }
+        
+        customers[customerIndex].orders[orderPos] = menu[foodIndex];
+        customers[customerIndex].orders[orderPos].quantity = quantity;
+        customers[customerIndex].totalAmount += menu[foodIndex].price * quantity;
+        customers[customerIndex].orderCount++;
+        
+        printf("Added %d x %s (KSH %d each)\n", 
+              quantity, 
+              menu[foodIndex].foodName, 
+              menu[foodIndex].price);
     }
-
-    if (count > 0) {
-        displayCart(items, count, menu, menuSize);
-        printf("Total: $%.2f\n", calculateTotal(items, count, menu, menuSize));
-        enqueueOrder(items, count);
+    printf("\nOrder placed successfully!\n");
+    printf("Total amount: KSH %.2f\n", customers[customerIndex].totalAmount);
+    saveCustomersToFile();
+}
+void displayOrderHistory(int customerIndex) {
+    printf("\n=== ORDER HISTORY FOR %s ===\n", customers[customerIndex].name);
+    if (customers[customerIndex].orderCount == 0) {
+        printf("No orders found.\n");
+        return;
     }
+    
+    printf("%-5s %-40s %-10s %-10s %-10s\n", 
+          "ID", "ITEM", "PRICE", "QTY", "TOTAL");
+    printf("------------------------------------------------------------\n");
+    
+    for (int i = 0; i < customers[customerIndex].orderCount; i++) {
+        FoodOrderItem item = customers[customerIndex].orders[i];
+        printf("%-5d %-40s %-10d %-10d %-10.2f\n", 
+              item.foodID, 
+              item.foodName, 
+              item.price, 
+              item.quantity, 
+              item.price * item.quantity);
+    }
+    
+    printf("\nGRAND TOTAL: KSH %.2f\n", customers[customerIndex].totalAmount);
 }
 
-void displayCart(OrderItem orders[], int count, MenuItem menu[], int menuSize) {
-    printf("\n Order Summary:\n");
-    for (int i = 0; i < count; i++) {
-        int id = orders[i].itemID - 1;
-        printf("%s (x%d) - $%.2f\n", menu[id].name, orders[i].quantity, menu[id].price * orders[i].quantity);
+void PaymentReceipt() {
+    if (customerCount == 0) {
+        printf("\nNo customers available. Please contact admin.\n");
+        return;
     }
-}
 
-float calculateTotal(OrderItem orders[], int count, MenuItem menu[], int menuSize) {
-    float total = 0;
-    for (int i = 0; i < count; i++) {
-        int id = orders[i].itemID - 1;
-        total += menu[id].price * orders[i].quantity;
+    int customerId;
+    printf("\nEnter your Customer ID: ");
+    if (scanf("%d", &customerId) != 1) {
+        printf("Invalid customer ID.\n");
+        clearInputBuffer();
+        return;
     }
-    return total;
+
+    int customerIndex = findCustomerbyId(customerId);
+    if (customerIndex == -1) {
+        printf("Customer not found!\n");
+        return;
+    }
+
+    if (customers[customerIndex].orderCount == 0) {
+        printf("No orders found for this customer.\n");
+        return;
+    }
+
+    // Display receipt on screen
+    printf("\n=== PAYMENT RECEIPT ===\n");
+    printf("Customer ID: %d\n", customers[customerIndex].customerId);
+    printf("Customer Name: %s\n", customers[customerIndex].name);
+    printf("----------------------------------------\n");
+    
+    displayOrderHistory(customerIndex);
+    
+    // Save receipt to file
+    char fileName[50];
+    sprintf(fileName, "receipt_%d.txt", customers[customerIndex].customerId);
+    FILE *file = fopen(fileName, "w");
+    if (file == NULL) {
+        printf("Error saving receipt to file.\n");
+        return;
+    }
+
+    fprintf(file, "=== PAYMENT RECEIPT ===\n");
+    fprintf(file, "Customer ID: %d\n", customers[customerIndex].customerId);
+    fprintf(file, "Customer Name: %s\n", customers[customerIndex].name);
+    fprintf(file, "----------------------------------------\n");
+    
+    for (int i = 0; i < customers[customerIndex].orderCount; i++) {
+        FoodOrderItem item = customers[customerIndex].orders[i];
+        fprintf(file, "%-5d %-40s %-10d %-10d %-10.2f\n", 
+               item.foodID, 
+               item.foodName, 
+               item.price, 
+               item.quantity, 
+               item.price * item.quantity);
+    }
+    
+    fprintf(file, "\nGRAND TOTAL: KSH %.2f\n", customers[customerIndex].totalAmount);
+    fclose(file);
+    
+    printf("\nReceipt saved to %s\n", fileName);
 }
