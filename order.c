@@ -8,7 +8,7 @@ void PlaceOrder();
 void PaymentReceipt();
 void getCurrentDate(char *date);
 void displayOrderHistory(int customerIndex);
-void clearInputBuffer();
+void clearInputBuffer();//ensures that unwanted characters don’t interfere with future input operations, making your program more reliable when handling user input.
 int findCustomerbyId(int id);
 
 typedef struct 
@@ -19,6 +19,7 @@ typedef struct
     int quantity;
 
 } FoodOrderItem;
+
 
 typedef struct {
     int customerId;
@@ -84,7 +85,7 @@ void saveCustomersToFile() {
 }
 void PlaceOrder() {
     if (customerCount == 0) {
-        printf("\nNo customers available. Please contact admin.\n");
+        printf("\n No customers available. Please contact admin.\n");
         return;
     }
 
@@ -211,7 +212,7 @@ void PaymentReceipt() {
     }
 
     // Display receipt on screen
-    printf("\n=== PAYMENT RECEIPT ===\n");
+    printf("\n=== PAYMENT BILL ===\n");
     printf("Customer ID: %d\n", customers[customerIndex].customerId);
     printf("Customer Name: %s\n", customers[customerIndex].name);
     printf("----------------------------------------\n");
@@ -227,7 +228,7 @@ void PaymentReceipt() {
         return;
     }
 
-    fprintf(file, "=== PAYMENT RECEIPT ===\n");
+    fprintf(file, "=== PAYMENT BILL ===\n");
     fprintf(file, "Customer ID: %d\n", customers[customerIndex].customerId);
     fprintf(file, "Customer Name: %s\n", customers[customerIndex].name);
     fprintf(file, "----------------------------------------\n");
@@ -246,4 +247,53 @@ void PaymentReceipt() {
     fclose(file);
     
     printf("\nReceipt saved to %s\n", fileName);
+}
+int main() {
+    int choice;
+    FILE *file = fopen("customers.dat", "rb");
+    if (file != NULL) {
+        fread(&customerCount, sizeof(int), 1, file);
+        fread(&nextCustomerId, sizeof(int), 1, file);
+        fread(customers, sizeof(Customer), customerCount, file);
+        fclose(file);
+    }
+    do {
+        printf("\n=== RESTAURANT MANAGEMENT SYSTEM ===\n");
+        printf("1. Place Order\n");
+        printf("2. View Order History\n");
+        printf("3. Generate Bill\n");
+        printf("4. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+        clearInputBuffer();
+        switch(choice) {
+            case 1:
+                PlaceOrder();
+                break;
+            case 2:
+                {
+                    int customerId;
+                    printf("Enter Customer ID: ");
+                    scanf("%d", &customerId);
+                    clearInputBuffer();
+                    int index = findCustomerbyId(customerId);
+                    if (index != -1) {
+                        displayOrderHistory(index);
+                    } else {
+                        printf("Customer not found!\n");
+                    }
+                }
+                break;
+            case 3:
+                PaymentReceipt();
+                break;
+            case 4:
+                printf("Exiting system...\n");
+                break;
+            default:
+                printf("Invalid choice! Please try again.\n");
+        }
+    } while (choice != 4);
+    
+    return 0;
 }
