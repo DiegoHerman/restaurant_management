@@ -68,7 +68,17 @@ void clearInputBuffer()
     while (getchar() != '\n')
         ;
 }
-
+void saveCustomersToFile() {
+    FILE *file = fopen("customers.dat", "wb");
+    if (file == NULL) {
+        printf("Error saving customer data!\n");
+        return;
+    }
+    fwrite(&customerCount, sizeof(int), 1, file);
+    f(int), 1, ffwrite(&nextCustomerId, sizeoile);
+    fwrite(customers, sizeof(Customer), customerCount, file);
+    fclose(file);
+}
 void getCurrentDate(char *date)
 {
     time_t t = time(NULL);
