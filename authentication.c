@@ -2,7 +2,7 @@
 #include <string.h>
 #include "authentication.h"
 
-int choice=0;//global var
+int adminLoggedIn=0;//global var
 typedef struct{
     char username[30];
     char password[30];  
@@ -25,7 +25,7 @@ for (int i=0; i<sizeof(users)/sizeof(users); i++){
     if (strcmp(username, users[i].username)==0&&
         strcmp(password, users[i].password) ==0){
         printf("Login successfully!\n");
-        choice=1;
+        adminLoggedIn=1;
         return 0;
         }
 }
