@@ -9,31 +9,11 @@ void FoodOrderMenu();
 void PlaceOrder();
 void PaymentReceipt();
 void AdminLogin();
-
 void getCurrentDate(char *date);
 void displayOrderHistory(int customerIndex);
 void clearInputBuffer();
-int findCustomerbyId();
-// Data structures
-typedef struct
-{
-    int foodID;
-    char foodName[120];
-    int price;
-    int quantity;
-} FoodOrderItem;
+int findCustomerbyId(int Id);
 
-typedef struct
-{
-    int customerId;
-    char name[50];
-    FoodOrderItem orders[20];
-    int orderCount;
-    float totalAmount;
-    char OrderDate[11];
-} Customer;
-
-// Global variables
 Customer customers[100];
 int customerCount = 0;
 int adminLoggedIn = 0; // iss like a switch that turns gives special access
@@ -45,6 +25,7 @@ int findCustomerbyId(int Id) {
             return i;
         }
     }
+    return -1;
 }
 /// THE FOOD MENU INVOLVED
 FoodOrderItem menu[12] = {
@@ -75,7 +56,6 @@ void saveCustomersToFile() {
         return;
     }
     fwrite(&customerCount, sizeof(int), 1, file);
-    f(int), 1, ffwrite(&nextCustomerId, sizeoile);
     fwrite(customers, sizeof(Customer), customerCount, file);
     fclose(file);
 }
@@ -104,7 +84,7 @@ void FoodOrderMenu()
                 if (customerCount >= 100)
                 {
                     printf("Maximum customer capacity reached!\n");
-                    break;
+                    return;
                 }
 
                 Customer newCustomer;
@@ -122,10 +102,10 @@ void FoodOrderMenu()
                 customers[customerCount++] = newCustomer;
 
                 printf("Customer added successfully with ID: %d\n", newCustomer.customerId);
-                return;
+                
             }
             
-            void placeorder() {
+            void placetheorder() {
                 printf("\n=== CUSTOMER LIST ===\n");
                 printf("%-8s %-20s %-15s\n", "ID", "NAME", "REGISTER DATE");
                 printf("----------------------------------------\n");
@@ -139,35 +119,25 @@ void FoodOrderMenu()
                 return;
             }
             
-            void vieworderhistory() {
-                int custId;
-                printf("Enter Customer ID to view orders: ");
-                 if (scanf("%d", &custId) != 1)
-                {
-                    printf("Invalid customer ID.\n");
-                    clearInputBuffer();
-                    break;
-                }
-                for(int i=0;i<customerCount;i++) {  
-               
-                if (customers[i].customerId==custId)
-                {
-                    displayOrderHistory(custId);
-                }
-                
-                else
-                {
-                    printf("Customer not found!\n");
-                }
-                return;
-            }
-            }
+        void ViewOrderHistory() {
+          int custId;
+          printf("Enter Customer ID to view orders: ");
+          if (scanf("%d", &custId) != 1) {
+             printf("Invalid customer ID.\n");
+             clearInputBuffer();
+             return;
+    }
+    
+    int customerIndex = findCustomerbyId(custId);
+    if (customerIndex != -1) {
+        displayOrderHistory(customerIndex);
+    } else {
+        printf("Customer not found!\n");
+    }
+}    
             void logout() {
                 adminLoggedIn = 0;
                 printf("Logged out successfully.\n");
-                break;
-            default:
-                printf("Invalid choice.\n");
             }
 
 
@@ -225,7 +195,6 @@ void PlaceOrder()
                 break;
             }
         }
-
         if (foodIndex == -1)
         {
             printf("Invalid Food ID! Please try again.\n");
@@ -326,9 +295,6 @@ void PaymentReceipt()
     printf("Customer Name: %s\n", customers[customerIndex].name);
     printf("----------------------------------------\n");
 
-    displayOrderHistory(customerIndex);
-
-    // Save receipt to file
     char fileName[50];
     sprintf(fileName, "receipt_%d.txt", customers[customerIndex].customerId);
     FILE *file = fopen(fileName, "w");
@@ -336,9 +302,7 @@ void PaymentReceipt()
     {
         printf("Error saving receipt to file.\n");
         return;
-    }
-  
-
+    }  
     for (int i = 0; i < customers[customerIndex].orderCount; i++)
     {
         fprintf(file, "%d,%s,%.2f\n",
@@ -350,5 +314,5 @@ void PaymentReceipt()
 
     fclose(file);
 
-    printf("\nReceipt saved to %s\n", fileName);
+    printf("\nReceipt saved to %s\n", fileName);
 }

@@ -2,8 +2,7 @@
 #define ORDER_H
 
 
-typedef struct
-{
+typedef struct FoodOrderItem {
     int foodID;
     char foodName[120];
     int price;
@@ -11,8 +10,7 @@ typedef struct
 } FoodOrderItem;
 
 
-typedef struct
-{
+typedef struct Customer {
     int customerId;
     char name[50];
     FoodOrderItem orders[20];
@@ -28,9 +26,8 @@ void AdminLogin();
 void getCurrentDate(char *date);
 void displayOrderHistory(int customerIndex);
 void clearInputBuffer();
-int findCustomerbyId();
+int findCustomerbyId(int Id);
 void addnewcustomer();
-void placeorder();
-void vieworderhistory();
+void ViewOrderHistory();  
 void logout();
 #endif
