@@ -1,9 +1,0 @@
-=== PAYMENT RECEIPT ===
-Customer ID: 1001
-Customer Name: Liam
-Order Date: 2025-04-24
-----------------------------------------
-109   Rice with Beans Stew                     100        2          0.00      
-109   Rice with Beans Stew                     100        2          0.00      
-
-GRAND TOTAL: KSH 400.00
