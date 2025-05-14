@@ -17,6 +17,7 @@ int findCustomerbyId(int Id);
 Customer customers[100];
 int customerCount = 0;
 int adminLoggedIn = 0; // iss like a switch that turns gives special access
+int customerIdcounter = 0; 
 
 
 int findCustomerbyId(int Id) {
@@ -88,10 +89,9 @@ void FoodOrderMenu()
                 }
 
                 Customer newCustomer;
-                newCustomer.customerId =rand()%1000+1;
+                newCustomer.customerId =customerIdcounter++;
 
                 printf("\nEnter customer name: ");
-                clearInputBuffer();
                 fgets(newCustomer.name, 50, stdin);
                 newCustomer.name[strcspn(newCustomer.name, "\n")] = '\0';
 
